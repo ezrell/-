@@ -1,0 +1,43 @@
+name: Build Duty Rest Tool EXE
+on: 
+  # 手动触发打包（推荐）
+  workflow_dispatch:
+  # 推送代码时自动触发（可选）
+  push:
+    paths:
+      - '*.html'
+      - '*.json'
+      - '*.js'
+
+jobs:
+  build-windows:
+    runs-on: windows-latest  # 使用GitHub的Windows服务器打包
+    steps:
+      # 第一步：拉取仓库代码
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 第二步：安装Node.js（自动配置PATH）
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'  # 使用稳定版Node.js
+          cache: 'npm'        # 缓存依赖，加速打包
+
+      # 第三步：安装打包依赖
+      - name: Install dependencies
+        run: npm install
+        env:
+          # 配置国内镜像，加速依赖下载
+          npm_config_registry: https://registry.npmmirror.com
+
+      # 第四步：执行打包命令生成EXE
+      - name: Build EXE file
+        run: npm run package
+
+      # 第五步：上传生成的EXE文件（方便下载）
+      - name: Upload EXE artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: duty-rest-tool-exe  # 下载包的名字
+          path: ./dist/             # EXE文件所在路径
