@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>值班调休记录工具</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft YaHei", sans-serif;
+        }
+        body {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+        .summary {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 30px;
+            text-align: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .summary-item {
+            background: #e8f4f8;
+            padding: 20px;
+            border-radius: 8px;
+            width: 28%;
+            min-width: 150px;
+        }
+        .summary-item h3 {
+            color: #444;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        .summary-item .num {
+            font-size: 28px;
+            font-weight: bold;
+            color: #2c7fb8;
+        }
+        .operate-area {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .operate-area h3 {
+            margin-bottom: 15px;
+            color: #333;
+            font-size: 18px;
+        }
+        .date-select {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .date-select label {
+            font-size: 16px;
+            font-weight: 500;
+        }
+        .date-select input {
+            padding: 8px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            min-width: 200px;
+        }
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+        .file-btn-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            padding-top: 15px;
+            border-top: 1px dashed #ddd;
+        }
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .add-duty-full {
+            background: #5cb85c;
+            color: white;
+        }
+        .add-duty-half {
+            background: #449d44;
+            color: white;
+        }
+        .use-rest-half {
+            background: #f0ad4e;
+            color: white;
+        }
+        .use-rest-full {
+            background: #d9534f;
+            color: white;
+        }
+        .export-btn {
+            background: #337ab7;
+            color: white;
+        }
+        .import-btn {
+            background: #2e6da4;
+            color: white;
+        }
+        .delete-btn {
+            background: #dc3545;
+            color: white;
+            padding: 5px 10px;
+            font-size: 14px;
+            margin-left: 10px;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+        .record-list {
+            margin-top: 30px;
+        }
+        .record-list h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+        .record-item {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .record-item .main-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+        .record-item .type-area {
+            display: flex;
+            align-items: center;
+        }
+        .record-item .type {
+            font-weight: bold;
+            font-size: 16px;
+        }
+        .record-item .date {
+            color: #2c7fb8;
+            font-weight: 500;
+            margin-right: 10px;
+        }
+        .record-item .detail {
+            color: #666;
+            font-size: 14px;
+        }
+        .reset-btn {
+            background: #777;
+            color: white;
+            margin-top: 20px;
+        }
+        .empty-tip {
+            text-align:center; 
+            color:#999; 
+            padding:20px;
+        }
+        /* 隐藏文件输入框 */
+        #file-input {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>值班调休记录工具</h1>
+        
+        <!-- 汇总信息 -->
+        <div class="summary">
+            <div class="summary-item">
+                <h3>总值班时长</h3>
+                <div class="num" id="total-duty">0.0</div>
+                <div>天</div>
+            </div>
+            <div class="summary-item">
+                <h3>已用调休时长</h3>
+                <div class="num" id="used-rest">0.0</div>
+                <div>天</div>
+            </div>
+            <div class="summary-item">
+                <h3>剩余调休时长</h3>
+                <div class="num" id="left-rest">0.0</div>
+                <div>天</div>
+            </div>
+        </div>
+
+        <!-- 操作区域 -->
+        <div class="operate-area">
+            <h3>新增记录</h3>
+            <div class="date-select">
+                <label for="operate-date">选择日期：</label>
+                <input type="date" id="operate-date" value="">
+            </div>
+            <div class="btn-group">
+                <button class="add-duty-full" onclick="addDuty(1)">记录1天值班</button>
+                <button class="add-duty-half" onclick="addDuty(0.5)">记录半天值班</button>
+                <button class="use-rest-half" onclick="useRest(0.5)">记录半天调休</button>
+                <button class="use-rest-full" onclick="useRest(1)">记录1天调休</button>
+            </div>
+            
+            <!-- 新增文件导出/导入按钮 -->
+            <div class="file-btn-group">
+                <button class="export-btn" onclick="exportRecords()">📤 导出记录到文件</button>
+                <button class="import-btn" onclick="document.getElementById('file-input').click()">📥 从文件导入记录</button>
+                <input type="file" id="file-input" accept=".txt,.json" onchange="importRecords(event)">
+            </div>
+        </div>
+
+        <!-- 记录列表 -->
+        <div class="record-list">
+            <h3>详细记录</h3>
+            <div id="record-container"></div>
+        </div>
+
+        <!-- 重置按钮 -->
+        <button class="reset-btn" onclick="resetAll()" style="display: block; margin: 20px auto 0;">重置所有记录</button>
+    </div>
+
+    <script>
+        // 初始化数据（本地存储）
+        let data = JSON.parse(localStorage.getItem('dutyRestRecord')) || {
+            totalDuty: 0,    // 总值班天数（支持0.5）
+            usedRest: 0,     // 已用调休天数（支持0.5）
+            records: []      // 操作记录
+        };
+
+        // 页面加载时设置默认日期为今天，并更新显示
+        window.onload = function() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('operate-date').value = today;
+            updateDisplay();
+            renderRecords();
+        };
+
+        // 新增值班（支持1天/0.5天）
+        function addDuty(dutyDays) {
+            const selectedDate = getSelectedDate();
+            if (!selectedDate) return;
+
+            // 检查该日期是否已记录过相同时长的值班
+            const isDuplicate = data.records.some(item => 
+                item.date === selectedDate && 
+                item.type === '值班' && 
+                item.content === `${dutyDays}天`
+            );
+            if (isDuplicate) {
+                alert(`⚠️ ${selectedDate} 已记录过${dutyDays}天值班，请勿重复添加！`);
+                return;
+            }
+
+            data.totalDuty += dutyDays;
+            // 保留1位小数，避免0.5+0.5=1.0而非1的显示问题
+            data.totalDuty = parseFloat(data.totalDuty.toFixed(1));
+            
+            addRecord('值班', `${dutyDays}天`, selectedDate);
+            saveData();
+            updateDisplay();
+            alert(`✅ 已记录 ${selectedDate} ${dutyDays}天值班`);
+        }
+
+        // 使用调休（支持1天/0.5天）
+        function useRest(restDays) {
+            const selectedDate = getSelectedDate();
+            if (!selectedDate) return;
+
+            // 计算剩余调休（保留1位小数）
+            const leftRest = parseFloat((data.totalDuty - data.usedRest).toFixed(1));
+            
+            // 检查剩余调休是否足够
+            if (leftRest < restDays) {
+                alert(`⚠️ 剩余调休只有${leftRest}天，不足以抵扣${restDays}天！`);
+                return;
+            }
+
+            // 检查该日期是否已记录过相同时长的调休
+            const isDuplicate = data.records.some(item => 
+                item.date === selectedDate && 
+                item.type === '调休' && 
+                item.content === `${restDays}天`
+            );
+            if (isDuplicate) {
+                alert(`⚠️ ${selectedDate} 已记录过${restDays}天调休，请勿重复添加！`);
+                return;
+            }
+
+            data.usedRest += restDays;
+            data.usedRest = parseFloat(data.usedRest.toFixed(1));
+            
+            addRecord('调休', `${restDays}天`, selectedDate);
+            saveData();
+            updateDisplay();
+            alert(`✅ 已记录 ${selectedDate} ${restDays}天调休`);
+        }
+
+        // 删除单条记录
+        function deleteRecord(index) {
+            // 确认删除
+            if (!confirm('⚠️ 确定要删除这条记录吗？删除后无法恢复！')) {
+                return;
+            }
+
+            // 获取要删除的记录
+            const deletedRecord = data.records[index];
+            // 提取时长（如"1天"→1，"0.5天"→0.5）
+            const days = parseFloat(deletedRecord.content.replace('天', ''));
+
+            // 根据记录类型，反向扣减总时长
+            if (deletedRecord.type === '值班') {
+                data.totalDuty -= days;
+                data.totalDuty = parseFloat(data.totalDuty.toFixed(1));
+            } else if (deletedRecord.type === '调休') {
+                data.usedRest -= days;
+                data.usedRest = parseFloat(data.usedRest.toFixed(1));
+            }
+
+            // 从数组中删除该记录
+            data.records.splice(index, 1);
+            // 保存数据并更新显示
+            saveData();
+            updateDisplay();
+            renderRecords();
+            
+            alert(`✅ 已删除【${deletedRecord.date} ${deletedRecord.type} ${deletedRecord.content}】的记录`);
+        }
+
+        // 导出记录到文本文件
+        function exportRecords() {
+            if (data.records.length === 0 && data.totalDuty === 0) {
+                alert('⚠️ 暂无记录可导出！');
+                return;
+            }
+
+            // 将数据转为格式化的JSON字符串（方便阅读）
+            const jsonStr = JSON.stringify(data, null, 2);
+            const blob = new Blob([jsonStr], { type: 'text/plain;charset=utf-8' });
+            
+            // 生成文件名（带日期）
+            const date = new Date().toISOString().split('T')[0];
+            const fileName = `值班调休记录_${date}.txt`;
+
+            // 创建下载链接并触发下载
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = fileName;
+            a.click();
+            
+            // 释放URL对象
+            URL.revokeObjectURL(a.href);
+            alert(`✅ 记录已成功导出为：${fileName}`);
+        }
+
+        // 从文件导入记录
+        function importRecords(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            // 检查文件类型
+            if (!file.name.endsWith('.txt') && !file.name.endsWith('.json')) {
+                alert('⚠️ 请选择.txt或.json格式的记录文件！');
+                // 清空文件选择框
+                document.getElementById('file-input').value = '';
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    // 解析导入的JSON数据
+                    const importedData = JSON.parse(e.target.result);
+                    
+                    // 验证数据格式是否正确
+                    if (!importedData.hasOwnProperty('totalDuty') || 
+                        !importedData.hasOwnProperty('usedRest') || 
+                        !importedData.hasOwnProperty('records')) {
+                        throw new Error('数据格式错误');
+                    }
+
+                    // 确认覆盖现有数据
+                    if (!confirm('⚠️ 导入记录会覆盖当前所有本地记录，确定要继续吗？')) {
+                        document.getElementById('file-input').value = '';
+                        return;
+                    }
+
+                    // 更新数据并保存
+                    data = importedData;
+                    // 确保数值精度
+                    data.totalDuty = parseFloat(data.totalDuty.toFixed(1));
+                    data.usedRest = parseFloat(data.usedRest.toFixed(1));
+                    
+                    saveData();
+                    updateDisplay();
+                    renderRecords();
+                    
+                    alert(`✅ 成功导入记录！\n- 总值班时长：${data.totalDuty}天\n- 已用调休时长：${data.usedRest}天`);
+                } catch (error) {
+                    alert(`❌ 导入失败！文件格式错误或数据损坏。\n错误信息：${error.message}`);
+                } finally {
+                    // 清空文件选择框
+                    document.getElementById('file-input').value = '';
+                }
+            };
+
+            // 读取文件内容
+            reader.readAsText(file, 'utf-8');
+        }
+
+        // 获取选择的日期并校验
+        function getSelectedDate() {
+            const dateInput = document.getElementById('operate-date');
+            const selectedDate = dateInput.value;
+            
+            if (!selectedDate) {
+                alert('请先选择要记录的日期！');
+                return null;
+            }
+            return selectedDate;
+        }
+
+        // 添加操作记录
+        function addRecord(type, content, date) {
+            const createTime = new Date().toLocaleString(); // 记录操作时间
+            data.records.unshift({
+                type: type,        // 类型：值班/调休
+                content: content,  // 时长：1天/0.5天
+                date: date,        // 值班/调休的具体日期
+                createTime: createTime // 记录创建时间
+            });
+            // 只保留最近100条记录
+            if (data.records.length > 100) {
+                data.records.pop();
+            }
+        }
+
+        // 保存数据到本地存储
+        function saveData() {
+            localStorage.setItem('dutyRestRecord', JSON.stringify(data));
+        }
+
+        // 更新页面显示
+        function updateDisplay() {
+            const leftRest = parseFloat((data.totalDuty - data.usedRest).toFixed(1));
+            document.getElementById('total-duty').textContent = data.totalDuty.toFixed(1);
+            document.getElementById('used-rest').textContent = data.usedRest.toFixed(1);
+            document.getElementById('left-rest').textContent = leftRest;
+        }
+
+        // 渲染详细记录列表
+        function renderRecords() {
+            const container = document.getElementById('record-container');
+            container.innerHTML = '';
+            
+            if (data.records.length === 0) {
+                container.innerHTML = '<div class="empty-tip">暂无操作记录</div>';
+                return;
+            }
+
+            // 按日期倒序渲染记录
+            data.records.forEach((item, index) => {
+                const recordItem = document.createElement('div');
+                recordItem.className = 'record-item';
+                
+                // 主要信息（类型+日期+删除按钮）
+                const mainInfo = document.createElement('div');
+                mainInfo.className = 'main-info';
+                
+                // 类型+日期区域
+                const typeArea = document.createElement('div');
+                typeArea.className = 'type-area';
+                
+                const typeSpan = document.createElement('span');
+                typeSpan.className = 'type';
+                typeSpan.textContent = `${item.type}：${item.content}`;
+                
+                const dateSpan = document.createElement('span');
+                dateSpan.className = 'date';
+                dateSpan.textContent = `(${item.date})`;
+                
+                // 删除按钮
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'delete-btn';
+                deleteBtn.textContent = '删除';
+                deleteBtn.onclick = () => deleteRecord(index);
+                
+                typeArea.appendChild(typeSpan);
+                typeArea.appendChild(dateSpan);
+                mainInfo.appendChild(typeArea);
+                mainInfo.appendChild(deleteBtn);
+                
+                // 详情（记录创建时间）
+                const detailSpan = document.createElement('span');
+                detailSpan.className = 'detail';
+                detailSpan.textContent = `记录时间：${item.createTime}`;
+                
+                recordItem.appendChild(mainInfo);
+                recordItem.appendChild(detailSpan);
+                container.appendChild(recordItem);
+            });
+        }
+
+        // 重置所有记录
+        function resetAll() {
+            if (confirm('⚠️ 确定要重置所有记录吗？此操作不可恢复！')) {
+                data = {
+                    totalDuty: 0,
+                    usedRest: 0,
+                    records: []
+                };
+                saveData();
+                updateDisplay();
+                renderRecords();
+                alert('✅ 已重置所有记录');
+            }
+        }
+    </script>
+</body>
+</html>
