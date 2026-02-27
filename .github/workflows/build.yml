@@ -22,7 +22,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'  # 使用稳定版Node.js
-          cache: 'npm'        # 缓存依赖，加速打包
+         # cache: 'npm'        # 缓存依赖，加速打包
 
       # 第三步：安装打包依赖
       - name: Install dependencies
